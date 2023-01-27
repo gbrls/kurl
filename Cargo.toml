@@ -2,6 +2,13 @@
 name = "kurl"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Simple CLI HTTP client focused on security research"
+homepage = "https://github.com/gbrls/kurl"
+repository = "https://github.com/gbrls/kurl"
+readme = "README.md"
+categories = ["command-line-utilities"]
+keywords = ["http", "security"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
