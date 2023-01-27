@@ -4,9 +4,8 @@ HTTP Requests with some status
 # Installation
 
 ```bash
-git clone https://github.com/gbrls/kurl
 # To install it with cargo you need to have the Rust toolchain installed
-cd kurl && cargo install --path .
+cargo install kurl
 ```
 ### Example
 ```bash
