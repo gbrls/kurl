@@ -1,5 +1,12 @@
 # kurl
-HTTP Requests with some status
+Simple CLI HTTP client focused on security research.
+
+`kurl` has features such as:
+- Display status code
+- Display content-type
+- Check if the body is valid json
+- Guess the json format
+- Display the content-length
 
 # Installation
 

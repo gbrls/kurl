@@ -103,9 +103,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.valid_json || args.all {
         if is_json {
-            buf.push(format!("isjson={}", is_json).green().bold());
+            buf.push(format!("{}", "json").green().bold());
         } else {
-            buf.push(format!("isjson={}", is_json).black());
+            buf.push(format!("{}", "notjson").normal());
         }
     }
 
@@ -119,7 +119,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !args.no_body {
-        buf.push(data.unwrap().normal());
+        buf.push(
+            format!(
+                "{}{}",
+                if buf.is_empty() { "" } else { "\n" },
+                data.unwrap()
+            )
+            .normal(),
+        );
     }
 
     if !buf.is_empty() {
