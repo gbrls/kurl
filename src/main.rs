@@ -27,9 +27,14 @@ struct Args {
     #[arg(short, long)]
     keys: bool,
 
+    /// Display the URL
+    #[arg(short = 'u', long)]
+    show_url: bool,
+
     /// Display all status
     #[arg(long)]
     all: bool,
+
 }
 
 fn get_keys(json: &serde_json::Value) -> Vec<String> {
@@ -56,9 +61,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let nurl = if !(args.url.starts_with("http://") || args.url.starts_with("https://")) {
-        format!("http://{}", args.url)
+        format!("http://{}", &args.url)
     } else {
-        args.url
+        args.url.clone()
     };
 
     let req = reqwest::blocking::get(nurl)?;
@@ -85,6 +90,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let is_json = serde_json::from_str::<serde_json::Value>(&data.as_ref().unwrap()).is_ok();
 
     let mut buf = vec![];
+
+    if args.show_url || args.all {
+        buf.push(format!("{}", &args.url).normal());
+    }
+
     if args.status_code || args.all {
         if status.is_success() {
             buf.push(format!("{}", status.as_u16()).green())
