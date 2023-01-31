@@ -91,9 +91,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut buf = vec![];
 
-    if args.show_url || args.all {
-        buf.push(format!("{}", &args.url).normal());
-    }
 
     if args.status_code || args.all {
         if status.is_success() {
@@ -126,6 +123,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.content_type || args.all {
         buf.push(format!("\"{}\"", content_type).normal());
+    }
+
+    if args.show_url || args.all {
+        buf.push(format!("{}", &args.url).normal());
     }
 
     if !args.no_body {
