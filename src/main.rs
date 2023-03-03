@@ -89,11 +89,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     //let resp = reqwest::blocking::get(nurl)?;
     //let resp = reqwest::blocking::Client::new().get(nurl).send()?;
-    let client = reqwest::blocking::Client::new();
     let resp = match args.verb {
-        Verb::GET => client.get(nurl),
-        Verb::POST => client.post(nurl),
-        Verb::HEAD => client.head(nurl),
+        Verb::GET => reqwest::blocking::Client::new().get(nurl),
+        Verb::POST => {
+            reqwest::blocking::Client::new().post(nurl)
+        },
+        Verb::HEAD => reqwest::blocking::Client::new().head(nurl),
         _ => panic!("Verb {:?} not implemented", args.verb),
     }
     .body(args.data.unwrap_or("".into()))
