@@ -1,6 +1,14 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use reqwest;
+
+#[derive(Copy, Clone, Debug, ValueEnum, PartialEq)]
+#[clap(rename_all = "UPPER")]
+enum Verb {
+    POST,
+    GET,
+    HEAD,
+}
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -35,6 +43,14 @@ struct Args {
     #[arg(long)]
     all: bool,
 
+    #[arg(long)]
+    scripts: Vec<String>,
+
+    #[arg(short = 'X', default_value = "GET")]
+    verb: Verb,
+
+    #[arg(short, long)]
+    data: Option<String>,
 }
 
 fn get_keys(json: &serde_json::Value) -> Vec<String> {
@@ -57,6 +73,11 @@ fn get_keys(json: &serde_json::Value) -> Vec<String> {
     }
 }
 
+//TODO: Run any script from bash here
+fn run_scripts(scripts: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
@@ -66,11 +87,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         args.url.clone()
     };
 
-    let req = reqwest::blocking::get(nurl)?;
+    //let resp = reqwest::blocking::get(nurl)?;
+    //let resp = reqwest::blocking::Client::new().get(nurl).send()?;
+    let client = reqwest::blocking::Client::new();
+    let resp = match args.verb {
+        Verb::GET => client.get(nurl),
+        Verb::POST => client.post(nurl),
+        Verb::HEAD => client.head(nurl),
+        _ => panic!("Verb {:?} not implemented", args.verb),
+    }
+    .body(args.data.unwrap_or("".into()))
+    .send()?;
 
-    let status = req.status();
+    let headers = resp.headers().clone();
 
-    let headers = req.headers().to_owned();
+    let status = resp.status();
+
+    let headers = resp.headers().to_owned();
     let content_type = headers
         .get("Content-Type")
         .map(|x| x.to_str().unwrap_or("null"))
@@ -78,19 +111,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut data: Option<String> = None;
 
-    let len = if req.content_length().is_some() {
-        let len = req.content_length().unwrap();
-        data = Some(req.text()?);
+    let len = if resp.content_length().is_some() {
+        let len = resp.content_length().unwrap();
+        data = Some(resp.text()?);
         len
     } else {
-        data = Some(req.text()?);
+        data = Some(resp.text()?);
         data.as_ref().unwrap().len() as u64
     };
 
     let is_json = serde_json::from_str::<serde_json::Value>(&data.as_ref().unwrap()).is_ok();
 
     let mut buf = vec![];
-
 
     if args.status_code || args.all {
         if status.is_success() {
@@ -108,11 +140,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         buf.push(format!("{}", len).normal());
     }
 
+    if args.all {
+        match args.verb {
+            Verb::GET => buf.push("get".green()),
+            Verb::POST => buf.push("post".blue()),
+            Verb::HEAD => buf.push("head".yellow()),
+        }
+    }
+
     if args.valid_json || args.all {
         if is_json {
-            buf.push(format!("{}", "json").green().bold());
+            buf.push("json".green().bold());
         } else {
-            buf.push(format!("{}", "notjson").normal());
+            buf.push("notjson".normal());
         }
     }
 
@@ -140,6 +180,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    //TODO: implement this with a pretty output
+    //if !args.no_body && args.verb == Verb::HEAD {
+    //    buf.push(
+    //        headers
+    //            .into_iter()
+    //            .map(|(k, v)| format!("{:?} {:?}", k, v))
+    //            .collect::<Vec<_>>()
+    //            .join("\n")
+    //            .normal(),
+    //    );
+    //}
+
     if !buf.is_empty() {
         println!(
             "{}",
@@ -149,6 +201,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .join(" ")
         );
     }
+
+    run_scripts(&args.scripts)?;
 
     //println!(
     //    "{} {} {} \"{}\"",
