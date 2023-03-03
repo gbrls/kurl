@@ -92,6 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let resp = match args.verb {
         Verb::GET => reqwest::blocking::Client::new().get(nurl),
         Verb::POST => {
+            println!("a");
             reqwest::blocking::Client::new().post(nurl)
         },
         Verb::HEAD => reqwest::blocking::Client::new().head(nurl),

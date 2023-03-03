@@ -16,8 +16,8 @@ cargo install kurl
 ```
 ### Example
 ```bash
-❯ kurl ipinfo.io/8.8.8.8 --all
-200 308 isjson=true "city country hostname ip loc org postal readme region timezone" "application/json; charset=utf-8"
+~ ❯ kurl ipinfo.io/8.8.8.8 --all
+200 304 get json "anycast city country hostname ip loc org postal readme region timezone" "application/json; charset =utf-8" ipinfo.io/8.8.8.8 
 {
   "ip": "8.8.8.8",
   "hostname": "dns.google",
@@ -36,19 +36,25 @@ cargo install kurl
 # Help
 
 ```
+Simple CLI HTTP client focused on security research
+
 Usage: kurl [OPTIONS] <URL>
 
 Arguments:
   <URL>  URL to send the request
 
 Options:
-  -c, --status-code
-  -s, --size
-  -j, --valid-json
-  -t, --content-type
-  -n, --no-body
-  -k, --keys          Try to guess the JSON's format
-      --all           Display all status
-  -h, --help          Print help
-  -V, --version       Print version
+  -c, --status-code        
+  -s, --size               
+  -j, --valid-json         
+  -t, --content-type       
+  -n, --no-body            
+  -k, --keys               Try to guess the JSON's format
+  -u, --show-url           Display the URL
+      --all                Display all status
+      --scripts <SCRIPTS>  
+  -X <VERB>                [default: GET] [possible values: POST, GET, HEAD]
+  -d, --data <DATA>        
+  -h, --help               Print help
+  -V, --version            Print version
 ```
