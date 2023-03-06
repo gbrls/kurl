@@ -1,5 +1,6 @@
 use clap::{Parser, ValueEnum};
 use colored::Colorize;
+use itertools::Itertools;
 use reqwest;
 
 #[derive(Copy, Clone, Debug, ValueEnum, PartialEq)]
@@ -8,6 +9,12 @@ enum Verb {
     POST,
     GET,
     HEAD,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum DataFormat {
+    Json(serde_json::Value),
+    Xml(xmltree::Element),
 }
 
 #[derive(Parser)]
@@ -22,8 +29,9 @@ struct Args {
     #[arg(short, long)]
     size: bool,
 
-    #[arg(short = 'j', long)]
-    valid_json: bool,
+    /// Validate the data as xml or json
+    #[arg(long)]
+    validate: bool,
 
     #[arg(short = 't', long)]
     content_type: bool,
@@ -53,7 +61,7 @@ struct Args {
     data: Option<String>,
 }
 
-fn get_keys(json: &serde_json::Value) -> Vec<String> {
+fn get_json_keys(json: &serde_json::Value) -> Vec<String> {
     if json.is_object() {
         json.as_object()
             .unwrap()
@@ -64,7 +72,7 @@ fn get_keys(json: &serde_json::Value) -> Vec<String> {
         let arr = json.as_array().unwrap().to_owned();
 
         if arr.len() > 0 {
-            get_keys(&arr[0])
+            get_json_keys(&arr[0])
         } else {
             vec![]
         }
@@ -73,9 +81,45 @@ fn get_keys(json: &serde_json::Value) -> Vec<String> {
     }
 }
 
+fn get_xml_keys(xml: &xmltree::Element) -> Vec<String> {
+    if xml
+        .children
+        .iter()
+        .any(|x| matches!(x, xmltree::XMLNode::Text(_)))
+    {
+        vec![xml.name.clone()]
+    } else {
+        xml.children
+            .iter()
+            .map(|x| match x {
+                xmltree::XMLNode::Element(x) => get_xml_keys(x),
+                _ => vec![],
+            })
+            .flatten()
+            .unique()
+            .collect::<Vec<_>>()
+    }
+}
+
 //TODO: Run any script from bash here
 fn run_scripts(scripts: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    Ok(())
+    todo!("Not implemented")
+}
+
+fn get_format(data: &str) -> Option<DataFormat> {
+    let data = data.trim().trim_start_matches("\u{feff}");
+    println!("Guessing the data format [{}]", data);
+    match (
+        serde_json::from_str::<serde_json::Value>(data),
+        xmltree::Element::parse(data.as_bytes()),
+    ) {
+        (Ok(x), _) => Some(DataFormat::Json(x)),
+        (_, Ok(x)) => Some(DataFormat::Xml(x)),
+        (_, Err(e)) => {
+            println!("error xml: [{:?}]", e);
+            None
+        }
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -94,9 +138,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Verb::POST => {
             println!("a");
             reqwest::blocking::Client::new().post(nurl)
-        },
+        }
         Verb::HEAD => reqwest::blocking::Client::new().head(nurl),
-        _ => panic!("Verb {:?} not implemented", args.verb),
     }
     .body(args.data.unwrap_or("".into()))
     .send()?;
@@ -122,7 +165,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         data.as_ref().unwrap().len() as u64
     };
 
-    let is_json = serde_json::from_str::<serde_json::Value>(&data.as_ref().unwrap()).is_ok();
+    let data_fmt = get_format(&data.as_ref().unwrap());
 
     let mut buf = vec![];
 
@@ -150,17 +193,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if args.valid_json || args.all {
-        if is_json {
-            buf.push("json".green().bold());
-        } else {
-            buf.push("notjson".normal());
+    if args.validate || args.all {
+        use DataFormat::*;
+        match &data_fmt {
+            Some(Json(_)) => buf.push("json".green().bold()),
+            Some(Xml(_)) => buf.push("xml".purple().bold()),
+            None => buf.push("none".normal()),
         }
     }
 
-    if is_json && (args.keys || args.all) {
-        let json = serde_json::from_str::<serde_json::Value>(&data.as_ref().unwrap())?;
-        buf.push(format!("\"{}\"", get_keys(&json).join(" ")).white().bold());
+    if data_fmt.is_some() && (args.keys || args.all) {
+        use DataFormat::*;
+        let keys = match data_fmt.unwrap() {
+            Json(json) => get_json_keys(&json),
+            Xml(xml) => get_xml_keys(&xml),
+        };
+        buf.push(format!("\"{}\"", keys.join(" ")).white().bold());
     }
 
     if args.content_type || args.all {
@@ -204,7 +252,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    run_scripts(&args.scripts)?;
+    if !args.scripts.is_empty() {
+        run_scripts(&args.scripts)?;
+    }
 
     //println!(
     //    "{} {} {} \"{}\"",
