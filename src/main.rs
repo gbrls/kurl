@@ -59,6 +59,9 @@ struct Args {
 
     #[arg(short, long)]
     data: Option<String>,
+
+    #[arg(long)]
+    verbose: bool,
 }
 
 fn get_json_keys(json: &serde_json::Value) -> Vec<String> {
@@ -108,7 +111,6 @@ fn run_scripts(scripts: &[String]) -> Result<(), Box<dyn std::error::Error>> {
 
 fn get_format(data: &str) -> Option<DataFormat> {
     let data = data.trim().trim_start_matches("\u{feff}");
-    println!("Guessing the data format [{}]", data);
     match (
         serde_json::from_str::<serde_json::Value>(data),
         xmltree::Element::parse(data.as_bytes()),
