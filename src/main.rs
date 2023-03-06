@@ -118,7 +118,6 @@ fn get_format(data: &str) -> Option<DataFormat> {
         (Ok(x), _) => Some(DataFormat::Json(x)),
         (_, Ok(x)) => Some(DataFormat::Xml(x)),
         (_, Err(e)) => {
-            println!("error xml: [{:?}]", e);
             None
         }
     }
@@ -138,7 +137,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let resp = match args.verb {
         Verb::GET => reqwest::blocking::Client::new().get(nurl),
         Verb::POST => {
-            println!("a");
             reqwest::blocking::Client::new().post(nurl)
         }
         Verb::HEAD => reqwest::blocking::Client::new().head(nurl),
