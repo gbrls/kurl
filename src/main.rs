@@ -2,6 +2,7 @@ use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use itertools::Itertools;
 use reqwest;
+use anyhow::{Result, Context};
 
 #[derive(Copy, Clone, Debug, ValueEnum, PartialEq)]
 #[clap(rename_all = "UPPER")]
@@ -105,7 +106,7 @@ fn get_xml_keys(xml: &xmltree::Element) -> Vec<String> {
 }
 
 //TODO: Run any script from bash here
-fn run_scripts(scripts: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+fn run_scripts(scripts: &[String]) -> Result<()> {
     todo!("Not implemented")
 }
 
@@ -123,7 +124,7 @@ fn get_format(data: &str) -> Option<DataFormat> {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     let nurl = if !(args.url.starts_with("http://") || args.url.starts_with("https://")) {
@@ -142,7 +143,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Verb::HEAD => reqwest::blocking::Client::new().head(nurl),
     }
     .body(args.data.unwrap_or("".into()))
-    .send()?;
+    .send().context("While sending request")?;
 
     let headers = resp.headers().clone();
 
@@ -157,8 +158,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut data: Option<String> = None;
 
     let len = if resp.content_length().is_some() {
-        let len = resp.content_length().unwrap();
-        data = Some(resp.text()?);
+        let len = resp.content_length().context("While readig Content-Length")?;
+        data = Some(resp.text().context("While reading reponse as text")?);
         len
     } else {
         data = Some(resp.text()?);
