@@ -1,8 +1,9 @@
+use anyhow::{Context, Result};
 use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use itertools::Itertools;
-use reqwest;
-use anyhow::{Result, Context};
+use reqwest::{self, blocking::ClientBuilder};
+use thiserror::Error;
 
 #[derive(Copy, Clone, Debug, ValueEnum, PartialEq)]
 #[clap(rename_all = "UPPER")]
@@ -16,6 +17,14 @@ enum Verb {
 enum DataFormat {
     Json(serde_json::Value),
     Xml(xmltree::Element),
+}
+
+#[derive(Error, Debug)]
+enum RequestError {
+    #[error("invalid hostname (`{0}`)")]
+    InvalidHostname(String),
+    #[error("unkown error(`{0}`)")]
+    Unkown(reqwest::Error),
 }
 
 #[derive(Parser)]
@@ -63,6 +72,15 @@ struct Args {
 
     #[arg(long)]
     verbose: bool,
+}
+
+#[derive(Debug, Clone)]
+struct RequestParam {
+    http_verb: Verb,
+    // refactor this to be more strongly typed
+    url: String,
+    // refactor this to &[u8]
+    body: String,
 }
 
 fn get_json_keys(json: &serde_json::Value) -> Vec<String> {
@@ -118,10 +136,44 @@ fn get_format(data: &str) -> Option<DataFormat> {
     ) {
         (Ok(x), _) => Some(DataFormat::Json(x)),
         (_, Ok(x)) => Some(DataFormat::Xml(x)),
-        (_, Err(e)) => {
-            None
-        }
+        (_, Err(_)) => None,
     }
+}
+
+fn request(
+    RequestParam {
+        http_verb,
+        url,
+        body,
+    }: RequestParam,
+) -> reqwest::blocking::Response {
+    let client = ClientBuilder::new()
+        .danger_accept_invalid_hostnames(true)
+        .danger_accept_invalid_certs(true)
+        .build()
+        .context("Error building http client")
+        .unwrap();
+
+    match http_verb {
+        Verb::GET => client.get(&url),
+        Verb::POST => client.post(&url),
+        Verb::HEAD => client.head(&url),
+    }
+    //.danger_accept_invalid_hostnames(true)
+    .body(body)
+    //.danger_accept_invalid_certs(true)
+    .send()
+    .map_err(|e| {
+        let s = format!("{:#?}", e);
+        if s.contains("dns error") {
+            RequestError::InvalidHostname(url)
+        } else {
+            eprintln!("{:#?}", e);
+            RequestError::Unkown(e)
+        }
+    })
+    .context("While sending request")
+    .unwrap()
 }
 
 fn main() -> Result<()> {
@@ -133,17 +185,14 @@ fn main() -> Result<()> {
         args.url.clone()
     };
 
+    let resp = request(RequestParam {
+        http_verb: args.verb,
+        url: nurl,
+        body: args.data.unwrap_or("".into()),
+    });
+
     //let resp = reqwest::blocking::get(nurl)?;
     //let resp = reqwest::blocking::Client::new().get(nurl).send()?;
-    let resp = match args.verb {
-        Verb::GET => reqwest::blocking::Client::new().get(nurl),
-        Verb::POST => {
-            reqwest::blocking::Client::new().post(nurl)
-        }
-        Verb::HEAD => reqwest::blocking::Client::new().head(nurl),
-    }
-    .body(args.data.unwrap_or("".into()))
-    .send().context("While sending request")?;
 
     let headers = resp.headers().clone();
 
@@ -158,7 +207,9 @@ fn main() -> Result<()> {
     let mut data: Option<String> = None;
 
     let len = if resp.content_length().is_some() {
-        let len = resp.content_length().context("While readig Content-Length")?;
+        let len = resp
+            .content_length()
+            .context("While readig Content-Length")?;
         data = Some(resp.text().context("While reading reponse as text")?);
         len
     } else {
