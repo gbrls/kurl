@@ -1,0 +1,41 @@
+200 125779 get none "text/html" http://189.115.162.106:80
+200 30541 get none "text/html; charset=UTF-8" http://45.162.225.22:3000
+200 15326 get none "text/html" http://45.162.224.70:80
+200 14398 get none "text/html" http://200.81.55.8:21004
+200 14272 get none "text/html" http://192.141.104.42:5090
+200 7826 get none "text/html; charset=gb2312" http://45.187.170.21:80
+200 7383 get none "text/html; charset=gb2312" http://45.187.168.221:80
+200 7065 get none "text/html" http://45.234.153.165:8000
+200 7065 get none "text/html" http://45.234.153.105:8000
+200 7065 get none "text/html" http://192.141.104.42:8292
+200 7065 get none "text/html" http://45.234.153.103:8000
+200 7064 get none "text/html" http://45.234.153.77:8000
+200 7064 get none "text/html" http://45.234.153.13:8000
+200 7063 get none "text/html" http://45.234.153.3:8000
+200 5880 get none "text/html; charset=utf-8" http://192.141.106.143:80
+200 5629 get none "text/html" http://45.162.226.182:80
+200 4940 get none "text/html" http://170.245.247.168:8100
+200 4594 get none "text/html" http://170.245.246.92:8100
+200 3910 get none "text/html; charset=UTF-8" http://45.162.225.22:80
+400 2959 get none "text/html; charset=utf-8" http://192.141.111.96:80
+200 1529 get none "text/html;charset=utf-8" http://45.162.224.70:8081
+403 687 get none "text/html" http://192.141.104.42:8080
+400 415 get none "text/html; charset=gb2312" http://45.187.170.21:443
+400 415 get none "text/html; charset=gb2312" http://45.187.168.221:443
+400 248 get none "text/html" http://179.54.209.62:4343
+400 248 get none "text/html" http://179.54.212.67:4343
+400 248 get none "text/html" http://179.251.119.202:4343
+400 248 get none "text/html" http://179.251.119.172:4343
+400 248 get none "text/html" http://179.251.119.126:4343
+400 248 get none "text/html" http://187.46.137.209:4343
+400 248 get none "text/html" http://187.46.137.41:4343
+401 125 get none "text/html" http://179.235.210.2:50777
+401 125 get none "text/html" http://181.222.96.211:50777
+401 125 get none "text/html" http://181.222.96.19:50777
+401 125 get none "text/html" http://186.218.0.176:50777
+200 0 get none "null" http://179.251.87.170:58000
+401 0 get none "null" http://200.225.249.60:7547
+401 0 get none "null" http://200.225.249.224:7547
+401 0 get none "null" http://200.225.249.199:7547
+200 0 get none "null" http://187.46.137.148:58000
+200 0 get none "null" http://179.251.119.65:58000

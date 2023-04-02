@@ -1,3 +1,5 @@
+use strip_ansi_escapes::strip;
+
 use crate::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -58,7 +60,7 @@ fn get_xml_keys(xml: &xmltree::Element) -> Vec<String> {
     }
 }
 
-pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<()> {
+pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<String> {
     let headers = resp.headers().clone();
 
     let status = resp.status();
@@ -85,32 +87,31 @@ pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<()> {
     let data_fmt = get_format(&data.as_ref().unwrap());
 
     let mut buf = vec![];
+    let mut ret_str = String::new();
 
-    if args.status_code || args.all {
-        if status.is_success() {
-            buf.push(format!("{}", status.as_u16()).green())
-        } else if status.is_server_error() {
-            buf.push(format!("{}", status.as_u16()).red())
-        } else if status.is_client_error() {
-            buf.push(format!("{}", status.as_u16()).yellow())
-        } else {
-            buf.push(format!("{}", status.as_u16()).black())
-        }
+    // status_code
+    if status.is_success() {
+        buf.push(format!("{}", status.as_u16()).green());
+    } else if status.is_server_error() {
+        buf.push(format!("{}", status.as_u16()).red())
+    } else if status.is_client_error() {
+        buf.push(format!("{}", status.as_u16()).yellow())
+    } else {
+        buf.push(format!("{}", status.as_u16()).black())
     }
 
-    if args.size || args.all {
-        buf.push(format!("{}", len).normal());
+    // response size
+    buf.push(format!("{}", len).normal());
+
+    // http verb
+    match args.verb {
+        Verb::GET => buf.push("get".green()),
+        Verb::POST => buf.push("post".blue()),
+        Verb::HEAD => buf.push("head".yellow()),
     }
 
-    if args.all {
-        match args.verb {
-            Verb::GET => buf.push("get".green()),
-            Verb::POST => buf.push("post".blue()),
-            Verb::HEAD => buf.push("head".yellow()),
-        }
-    }
-
-    if args.validate || args.all {
+    // data format
+    {
         use DataFormat::*;
         match &data_fmt {
             Some(Json(_)) => buf.push("json".green().bold()),
@@ -119,7 +120,8 @@ pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<()> {
         }
     }
 
-    if data_fmt.is_some() && (args.keys || args.all) {
+    // show keys from json or xml
+    if data_fmt.is_some() {
         use DataFormat::*;
         let keys = match data_fmt.unwrap() {
             Json(json) => get_json_keys(&json),
@@ -128,15 +130,13 @@ pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<()> {
         buf.push(format!("\"{}\"", keys.join(" ")).white().bold());
     }
 
-    if args.content_type || args.all {
-        buf.push(format!("\"{}\"", content_type).normal());
-    }
+    // content-type
+    buf.push(format!("\"{}\"", content_type).normal());
 
-    if args.show_url || args.all {
-        buf.push(format!("{}", url).normal());
-    }
+    // url
+    buf.push(format!("{}", url).normal());
 
-    if !args.no_body {
+    if args.show_response_body {
         buf.push(
             format!(
                 "{}{}",
@@ -149,15 +149,40 @@ pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<()> {
 
     //TODO: implement header printing
 
-    if !buf.is_empty() {
-        println!(
-            "{}",
-            buf.into_iter()
-                .map(|x| format!("{}", x))
-                .collect::<Vec<_>>()
-                .join(" ")
-        );
+    let final_string = buf
+        .into_iter()
+        .map(|x| format!("{}", x))
+        .collect_vec()
+        .join(" ");
+
+    if !final_string.is_empty() {
+        println!("{}", final_string);
     }
 
-    Ok(())
+    let no_colors =
+        strip(final_string.as_bytes()).context("while removing ansi symbols from string")?;
+    let no_colors = std::str::from_utf8(&no_colors).context("while decoding str to utf-8")?;
+    //snailquote::unescape(no_colors).context("while unescaping string")
+    Ok(no_colors.to_owned())
+}
+
+pub fn write_results(args: &CliArgs, data: Vec<String>) -> Result<()> {
+    if args.output.is_none() {
+        return Ok(());
+    }
+
+    let fname = args.output.clone().unwrap();
+
+    let s = data
+        .into_iter()
+        .filter(|s| !s.is_empty())
+        .sorted_by_key(|s| {
+            let len: String = s.split_ascii_whitespace().skip(1).take(1).collect();
+            let n: usize = len.parse().unwrap();
+            // -n for inverse
+            1i64 - (n as i64)
+        })
+        .join("\n");
+
+    std::fs::write(fname, format!("{}\n", s)).context("while writing to file")
 }

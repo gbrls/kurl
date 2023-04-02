@@ -1,7 +1,8 @@
 pub mod print;
+mod tests;
 
 use anyhow::{Context, Result};
-use clap::{Arg, Parser, ValueEnum};
+use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use itertools::Itertools;
 use reqwest::{
@@ -35,49 +36,26 @@ pub struct CliArgs {
     /// URL or file with URLs to send the request
     url_or_file: String,
 
-    #[arg(short = 'c', long)]
-    status_code: bool,
-
-    #[arg(short, long)]
-    size: bool,
-
-    /// Validate the data as xml or json
-    #[arg(long)]
-    validate: bool,
-
-    #[arg(short = 't', long)]
-    content_type: bool,
-
-    #[arg(short, long)]
-    no_body: bool,
-
-    /// Try to guess the JSON's format
-    #[arg(short, long)]
-    keys: bool,
-
-    /// Display the URL
-    #[arg(short = 'u', long)]
-    show_url: bool,
-
     /// Number of parallel threads to send the requests
     #[arg(short = 'p', default_value = "4")]
     nworkers: usize,
 
-    /// Display all status
-    #[arg(long)]
-    all: bool,
-
-    #[arg(long)]
-    scripts: Vec<String>,
-
     #[arg(short = 'X', default_value = "GET")]
     verb: Verb,
 
+    #[arg(short = 'b', long = "body")]
+    show_response_body: bool,
+
+    /// Data to be sent in the request body
     #[arg(short, long)]
     data: Option<String>,
 
-    #[arg(long)]
-    verbose: bool,
+    #[arg(long, default_value = "0")]
+    verbosity_level: usize,
+
+    /// File to write the results
+    #[arg(short)]
+    output: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -147,7 +125,7 @@ fn urls(args: &CliArgs) -> Vec<String> {
 }
 
 /// This is a blocking function that will only return when all the requests
-fn execute_requests(args: &CliArgs) {
+fn execute_requests(args: &CliArgs) -> Result<()> {
     let params = urls(&args)
         .into_iter()
         .map(|url| RequestParam {
@@ -173,20 +151,22 @@ fn execute_requests(args: &CliArgs) {
             //eprintln!("started {}", rp.url);
             match request(rp) {
                 Ok(response) => {
-                    print::log_response(&args, response, &url).unwrap();
-                    tx.send(1).unwrap();
+                    let res = print::log_response(&args, response, &url);
+                    tx.send(res.unwrap_or("".to_owned())).unwrap();
                 }
 
                 // TODO: Log error when in verbose mode
-                Err(_) => tx.send(0).unwrap(),
+                Err(_) => tx.send("".to_owned()).unwrap(),
             }
         });
     }
 
-    // TODO tif some request panics, this will halt the application
+    // TODO: if some request panics, this will halt the application
     let res = rx.into_iter().take(n).collect_vec();
     // verbose
     //eprintln!("{res:?}");
+
+    print::write_results(args, res)
 }
 
 fn main() -> Result<()> {
