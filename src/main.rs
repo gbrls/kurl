@@ -56,6 +56,35 @@ pub struct CliArgs {
     /// File to write the results
     #[arg(short)]
     output: Option<String>,
+
+    /// Extensions to be ignored
+    #[arg(
+        long = "fext",
+        default_value = "jpeg,png,jpg,gif,wof,ttf,otf,eot,swf,ico,svg,css,woff,woff2"
+    )]
+    filter_extensions: String,
+
+    /// Status codes to be ignored
+    #[arg(long = "fstatus", default_value = "404")]
+    filter_status: String,
+}
+
+impl CliArgs {
+    pub fn filter_extensions(&self) -> Vec<String> {
+        self.filter_extensions
+            .clone()
+            .split(",")
+            .map(|s| format!(".{}", s))
+            .collect_vec()
+    }
+
+    pub fn filter_status(&self) -> Vec<u16> {
+        self.filter_status
+            .clone()
+            .split(",")
+            .map(|s| s.parse().unwrap())
+            .collect_vec()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -90,7 +119,7 @@ fn request(
     let client = ClientBuilder::new()
         .danger_accept_invalid_hostnames(true)
         .danger_accept_invalid_certs(true)
-        .timeout(Duration::from_secs(2))
+        .timeout(Duration::from_secs(30))
         .build()
         .context("Error building http client")
         .unwrap();
@@ -124,9 +153,17 @@ fn urls(args: &CliArgs) -> Vec<String> {
     }
 }
 
+fn filter_by_extension(args: &CliArgs, urls: Vec<String>) -> Vec<String> {
+    let exts = args.filter_extensions();
+
+    urls.into_iter()
+        .filter(|url| exts.iter().all(|ext| !url.ends_with(ext)))
+        .collect_vec()
+}
+
 /// This is a blocking function that will only return when all the requests
 fn execute_requests(args: &CliArgs) -> Result<()> {
-    let params = urls(&args)
+    let params = filter_by_extension(&args, urls(&args))
         .into_iter()
         .map(|url| RequestParam {
             http_verb: args.verb,
@@ -169,9 +206,31 @@ fn execute_requests(args: &CliArgs) -> Result<()> {
     print::write_results(args, res)
 }
 
+fn banner() {
+    let main = r#"
+██ ▄█▀ █    ██  ██▀███   ██▓    
+██▄█▒  ██  ▓██▒▓██ ▒ ██▒▓██▒    
+▓███▄░ ▓██  ▒██░▓██ ░▄█ ▒▒██░    
+▓██ █▄ ▓▓█  ░██░▒██▀▀█▄  ▒██░    
+▒██▒ █▄▒▒█████▓ ░██▓ ▒██▒░██████▒
+▒ ▒▒ ▓▒░▒▓▒ ▒ ▒ ░ ▒▓ ░▒▓░░ ▒░▓  ░
+░ ░▒ ▒░░░▒░ ░ ░   ░▒ ░ ▒░░ ░ ▒  ░
+░ ░░ ░  ░░░ ░ ░   ░░   ░   ░ ░   
+░  ░      ░        ░         ░  ░
+    "#
+    .bright_yellow();
+
+    let version: &str = env!("CARGO_PKG_VERSION");
+
+    eprint!("{}", main);
+
+    eprintln!("v{} - By: gbrls\n", version);
+}
+
 fn main() -> Result<()> {
     let args = CliArgs::parse();
-    execute_requests(&args);
+    banner();
+    execute_requests(&args)?;
 
     Ok(())
 }

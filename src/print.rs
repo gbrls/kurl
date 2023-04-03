@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use strip_ansi_escapes::strip;
 
 use crate::*;
@@ -64,6 +65,13 @@ pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<String>
     let headers = resp.headers().clone();
 
     let status = resp.status();
+    let filter_status = args.filter_status();
+
+    let u16_status = status.as_u16();
+
+    if filter_status.into_iter().any(|fs| u16_status == fs) {
+        return Err(anyhow!("Filtered"));
+    }
 
     let headers = resp.headers().to_owned();
     let content_type = headers
