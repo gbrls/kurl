@@ -1,12 +1,22 @@
-# kurl
-Simple CLI HTTP client focused on security research.
+# Kurl
+<p align="center">
+<b>A Fast and Simple HTTP Client for Security Researchers</b>
+</p>
 
-`kurl` has features such as:
-- Display status code
-- Display content-type
-- Check if the body is valid json
-- Guess the json format
-- Display the content-length
+<p align="center">
+<a href="" align="center">Install</a>
+•
+<a href="" align="center">Usage</a>
+
+</p>
+
+<p align="center">
+
+![](./img/kurl-demo.jpg)
+
+</p>
+
+
 
 # Install Kurl
 
@@ -14,25 +24,6 @@ Simple CLI HTTP client focused on security research.
 cargo install kurl
 ```
 _For this to work you need to have [Rust installed](https://rustup.rs/)_
-
-### Example
-```bash
-~ ❯ kurl ipinfo.io/8.8.8.8 --all
-200 304 get json "anycast city country hostname ip loc org postal readme region timezone" "application/json; charset =utf-8" ipinfo.io/8.8.8.8 
-{
-  "ip": "8.8.8.8",
-  "hostname": "dns.google",
-  "anycast": true,
-  "city": "Mountain View",
-  "region": "California",
-  "country": "US",
-  "loc": "37.4056,-122.0775",
-  "org": "AS15169 Google LLC",
-  "postal": "94043",
-  "timezone": "America/Los_Angeles",
-  "readme": "https://ipinfo.io/missingauth"
-}
-```
 
 # Usage
 
