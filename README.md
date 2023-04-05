@@ -8,12 +8,13 @@ Simple CLI HTTP client focused on security research.
 - Guess the json format
 - Display the content-length
 
-# Installation
+# Install Kurl
 
 ```bash
-# To install it with cargo you need to have the Rust toolchain installed
 cargo install kurl
 ```
+_For this to work you need to have [Rust installed](https://rustup.rs/)_
+
 ### Example
 ```bash
 ~ ❯ kurl ipinfo.io/8.8.8.8 --all
@@ -33,28 +34,42 @@ cargo install kurl
 }
 ```
 
-# Help
+# Usage
 
 ```
+kurl --help
+```
+
+Will show the command line usage.
+
+
+```console
 Simple CLI HTTP client focused on security research
 
-Usage: kurl [OPTIONS] <URL>
+Usage: kurl [OPTIONS] <URL_OR_FILE>
 
 Arguments:
-  <URL>  URL to send the request
+  <URL_OR_FILE>  URL or file with URLs to send the request
 
 Options:
-  -c, --status-code        
-  -s, --size               
-  -j, --valid-json         
-  -t, --content-type       
-  -n, --no-body            
-  -k, --keys               Try to guess the JSON's format
-  -u, --show-url           Display the URL
-      --all                Display all status
-      --scripts <SCRIPTS>  
-  -X <VERB>                [default: GET] [possible values: POST, GET, HEAD]
-  -d, --data <DATA>        
-  -h, --help               Print help
-  -V, --version            Print version
+  -p <NWORKERS>
+          Number of parallel threads to send the requests [default: 4]
+  -X <VERB>
+          [default: GET] [possible values: POST, GET, HEAD]
+  -b, --body
+
+  -d, --data <DATA>
+          Data to be sent in the request body
+      --verbosity-level <VERBOSITY_LEVEL>
+          [default: 0]
+  -o <OUTPUT>
+          File to write the results
+      --fext <FILTER_EXTENSIONS>
+          Extensions to be ignored [default: jpeg,png,jpg,gif,wof,ttf,otf,eot,swf,ico,svg,css,woff,woff2]
+      --fstatus <FILTER_STATUS>
+          Status codes to be ignored [default: 404]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
