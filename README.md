@@ -4,9 +4,12 @@
 </p>
 
 <p align="center">
-<a href="" align="center">Install</a>
+<a href="https://github.com/gbrls/kurl#install-kurl" align="center">Install</a>
 •
-<a href="" align="center">Usage</a>
+<a href="https://github.com/gbrls/kurl#usage" align="center">Usage</a>
+•
+<a href="https://github.com/gbrls/kurl#concept" align="center">Concept</a>
+
 
 </p>
 
@@ -24,6 +27,21 @@
 cargo install kurl
 ```
 _For this to work you need to have [Rust installed](https://rustup.rs/)_
+
+# Concept
+
+**Kurl** was created to aid my work as a Red Teamer.
+Kurl creates an easy to view data sent via HTTP requests by the URLs provided, showing:
+
+- Status code.
+- Response length.
+- HTTP Verb.
+- **Data format** (json or xml).
+- Content-Type.
+- The URL itself.
+
+With kurl it's easy to parse through many URLs to find relevant data. You can visually find what's important for you,
+or even output to a file and grep things.
 
 # Usage
 
