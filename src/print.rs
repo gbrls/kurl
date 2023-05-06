@@ -135,6 +135,16 @@ pub fn log_response(args: &CliArgs, resp: Response, url: &str) -> Result<String>
             Json(json) => get_json_keys(&json),
             Xml(xml) => get_xml_keys(&xml),
         };
+
+        let keys = if keys.len() > 8 {
+            let mut truncated = keys.into_iter().take(8).collect_vec();
+            truncated.push("...".to_string());
+            truncated
+        } else {
+            keys
+        };
+
+
         buf.push(format!("\"{}\"", keys.join(" ")).white().bold());
     }
 
