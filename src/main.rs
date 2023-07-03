@@ -67,6 +67,10 @@ pub struct CliArgs {
     /// Status codes to be ignored
     #[arg(long = "fstatus", default_value = "404")]
     filter_status: String,
+
+    /// proxy
+    #[arg(short = 'x')]
+    proxy: Option<String>,
 }
 
 impl CliArgs {
@@ -94,6 +98,7 @@ struct RequestParam {
     url: String,
     // refactor this to &[u8]
     body: String,
+    proxy: Option<String>,
 }
 
 //TODO: Run any script from bash here
@@ -114,9 +119,15 @@ fn request(
         http_verb,
         url,
         body,
+        proxy,
     }: RequestParam,
 ) -> Result<reqwest::blocking::Response> {
-    let client = ClientBuilder::new()
+    let client = match proxy {
+        Some(url) => ClientBuilder::new().proxy(reqwest::Proxy::all(url)?),
+        None => ClientBuilder::new(),
+    };
+
+    let client = client
         .danger_accept_invalid_hostnames(true)
         .danger_accept_invalid_certs(true)
         .timeout(Duration::from_secs(30))
@@ -169,6 +180,7 @@ fn execute_requests(args: &CliArgs) -> Result<()> {
             http_verb: args.verb,
             url: url,
             body: args.data.clone().unwrap_or("".into()),
+            proxy: args.proxy.clone(),
         })
         .collect_vec();
 
